@@ -72,7 +72,12 @@ export async function proxy(req: NextRequest) {
   }
 
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    const token = req.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    // The web UI authenticates with an httpOnly cookie; the native app can't use
+    // cookies, so it sends the same token as an x-admin-token header instead.
+    const token =
+      req.cookies.get(ADMIN_SESSION_COOKIE)?.value ??
+      req.headers.get("x-admin-token") ??
+      undefined;
     const valid = await verifySessionToken(token, process.env.ADMIN_PASSWORD ?? "");
     if (!valid) {
       if (pathname.startsWith("/api/")) {
@@ -88,7 +93,10 @@ export async function proxy(req: NextRequest) {
     if (!isBasicAdminPath(pathname)) {
       const securityPass = await getSecurityPasscode();
       if (securityPass) {
-        const settingsToken = req.cookies.get(SETTINGS_SESSION_COOKIE)?.value;
+        const settingsToken =
+          req.cookies.get(SETTINGS_SESSION_COOKIE)?.value ??
+          req.headers.get("x-settings-token") ??
+          undefined;
         if (!(await verifySessionToken(settingsToken, securityPass))) {
           if (pathname.startsWith("/api/")) {
             return NextResponse.json(

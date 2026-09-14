@@ -37,7 +37,8 @@ export async function POST(req: NextRequest) {
   await clearRateLimit(rateLimitKey);
 
   const token = await createSessionToken(current, SETTINGS_SESSION_MAX_AGE_SECONDS);
-  const res = NextResponse.json({ ok: true });
+  // Return the token so the native app can store it and send x-settings-token.
+  const res = NextResponse.json({ ok: true, token });
   res.cookies.set(SETTINGS_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: true,

@@ -36,7 +36,9 @@ export async function POST(req: NextRequest) {
   await clearRateLimit(rateLimitKey);
 
   const token = await createSessionToken(process.env.ADMIN_PASSWORD ?? "");
-  const res = NextResponse.json({ ok: true });
+  // Return the token in the body too, so the native app can store it and send it
+  // as an x-admin-token header (native clients can't use the browser cookie).
+  const res = NextResponse.json({ ok: true, token });
   res.cookies.set(ADMIN_SESSION_COOKIE, token, {
     httpOnly: true,
     secure: true,
