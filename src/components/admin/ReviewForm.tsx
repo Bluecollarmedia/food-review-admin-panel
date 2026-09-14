@@ -1,12 +1,20 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
 import { categories, cities, reviewers, prices, type Review } from "@/lib/data";
 import ImageCropper from "../ImageCropper";
 import LocationPicker from "./LocationPicker";
 import { compressVideo, type VideoQuality } from "@/lib/compress-video";
 import { uploadFile } from "@/lib/upload-file";
+
+// Minimal typing for the Screen Wake Lock API — not in the older DOM lib we
+// target. Used to keep the phone from sleeping mid compress/upload (the browser
+// suspends a locked tab, which would otherwise stall the upload).
+type WakeLockSentinelLike = { release: () => Promise<void> };
+type WakeLockNavigator = Navigator & {
+  wakeLock?: { request: (type: "screen") => Promise<WakeLockSentinelLike> };
+};
 
 const QUALITY_OPTIONS: { value: "full" | VideoQuality; label: string }[] = [
   { value: "full", label: "Full quality" },
@@ -352,6 +360,54 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
 
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
+
+  // While a video is compressing/uploading: (1) hold a Screen Wake Lock so the
+  // phone doesn't dim/lock and suspend the tab (which would stall the upload),
+  // re-acquiring it if the user tabs away and back; and (2) warn before leaving
+  // the page so an in-progress upload isn't killed by accident. True background
+  // upload with the app closed isn't possible in a mobile browser — this keeps
+  // it alive as long as the screen stays on.
+  const wakeLockRef = useRef<WakeLockSentinelLike | null>(null);
+  useEffect(() => {
+    if (!submitting) return;
+    let cancelled = false;
+
+    async function acquire() {
+      try {
+        const nav = navigator as WakeLockNavigator;
+        if (nav.wakeLock?.request && !wakeLockRef.current) {
+          wakeLockRef.current = await nav.wakeLock.request("screen");
+        }
+      } catch {
+        // not supported or denied — nothing we can do, upload still runs
+      }
+    }
+    acquire();
+
+    function onVisibility() {
+      // The OS releases the wake lock when the tab is hidden; grab it again on
+      // return so a quick glance away doesn't drop it for the rest of the upload.
+      if (document.visibilityState === "visible" && !cancelled) {
+        wakeLockRef.current = null;
+        acquire();
+      }
+    }
+    function onBeforeUnload(e: BeforeUnloadEvent) {
+      e.preventDefault();
+      e.returnValue = "";
+    }
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("beforeunload", onBeforeUnload);
+
+    return () => {
+      cancelled = true;
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("beforeunload", onBeforeUnload);
+      const wl = wakeLockRef.current;
+      wakeLockRef.current = null;
+      wl?.release().catch(() => {});
+    };
+  }, [submitting]);
 
   function toggleCategory(cat: string) {
     setSelectedCategories((prev) =>
