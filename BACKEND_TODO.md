@@ -35,6 +35,20 @@ hooked up, so nothing is forgotten.
 - **To connect:** shared Netlify Blobs (same as Visitors) + R2 read access for
   selfie URLs, plus the `/api/admin/appeal*` routes.
 
+### Storage
+- Front-end built (header, "Compress videos" link, orphaned-files list
+  component, empty state). NOT connected.
+- Needs: **R2 (S3) bucket access** via `@aws-sdk/client-s3` + R2 credentials
+  (`listFiles` / delete), plus **reviews data (Netlify Blobs)** to know which
+  video/thumbnail keys are in use. Avatars + comment images already come from
+  Supabase (shared).
+- ⚠️ SAFETY: do NOT enable the orphaned-files scan/delete until reviews (blobs)
+  are connected. Orphan detection = all bucket files MINUS in-use keys; if
+  reviews aren't connected, every real review video/thumbnail looks "orphaned"
+  and the Delete button would irreversibly remove in-use files. `src/lib/r2.ts`
+  is currently a type-only placeholder (`listFiles` returns []).
+- The `/admin/compress` tool is a placeholder page for now.
+
 ## Notes
 - Anything backed by **Supabase** (Settings, Comments, Accounts, Notifications,
   Reviews data) shares with the main site automatically once the Supabase env
