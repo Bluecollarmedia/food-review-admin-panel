@@ -5,6 +5,14 @@ import { getStore } from "@netlify/blobs";
 // This trimmed version only powers the nav badge count; the full Appeals tab
 // (and a shared-data strategy) will be ported when that tab is built.
 
+export type AppealGeo = {
+  city?: string;
+  region?: string;
+  country?: string;
+  countryCode?: string;
+  flag?: string;
+};
+
 export type Appeal = {
   id: string;
   name: string;
@@ -15,7 +23,7 @@ export type Appeal = {
   deviceId: string;
   ips: string[];
   ip: string;
-  geo?: unknown;
+  geo?: AppealGeo;
   createdAt: string;
   status: "new" | "handled";
 };
