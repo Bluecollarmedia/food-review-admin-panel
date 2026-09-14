@@ -28,6 +28,15 @@ export const metadata: Metadata = {
     nocache: true,
     googleBot: { index: false, follow: false },
   },
+  manifest: "/manifest.json",
+  // "Add to Home Screen" launches full-screen like an app, with a dark status
+  // bar over the crimson theme. (Favicon + Apple touch icon come from
+  // src/app/icon.png and src/app/apple-icon.png automatically.)
+  appleWebApp: {
+    capable: true,
+    title: "D&S Admin",
+    statusBarStyle: "black-translucent",
+  },
 };
 
 export const viewport: Viewport = {
