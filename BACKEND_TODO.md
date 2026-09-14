@@ -17,6 +17,9 @@ hooked up, so nothing is forgotten.
   `reviews-store` (Netlify Blobs, not connected yet), so for now each comment
   shows the video **slug** instead of the nice title. Wire it up when the
   reviews/blobs connection is added (pass a real slug->title map into the page).
+- **Notifications** — loads live from the Supabase `admin_notifications` table
+  and marks unread ones read on view. Same partial as Comments: the video-title
+  label uses the slug until reviews/blobs are connected.
 
 ## ⏳ Front-end built, backend NOT connected yet
 
