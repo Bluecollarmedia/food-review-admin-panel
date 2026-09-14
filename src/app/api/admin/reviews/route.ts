@@ -1,7 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createReview, type ReviewInput } from "@/lib/reviews-store";
+import { createReview, listAllReviews, type ReviewInput } from "@/lib/reviews-store";
+import { getAllViews } from "@/lib/views";
 import { notifyNewUpload } from "@/lib/notify";
 import { getPublicFileUrl } from "@/lib/media-url";
+
+// Read endpoint for the native app: the full review list with real + public
+// view counts and resolved file URLs.
+export async function GET() {
+  const reviews = await listAllReviews();
+  const views = await getAllViews(reviews.map((r) => r.slug));
+  const items = reviews.map((r) => ({
+    ...r,
+    realViews: views[r.slug] ?? 0,
+    thumbnailUrl: getPublicFileUrl(r.thumbnailKey),
+    videoUrl: getPublicFileUrl(r.videoKey),
+    secondReviewerVideoUrl: getPublicFileUrl(r.secondReviewerVideoKey),
+  }));
+  return NextResponse.json({ reviews: items });
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as ReviewInput | null;

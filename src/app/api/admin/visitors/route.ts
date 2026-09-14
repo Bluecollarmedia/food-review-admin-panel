@@ -1,12 +1,29 @@
 import { NextRequest, NextResponse } from "next/server";
 import {
+  listVisitors,
+  getHiddenVisitors,
   hideVisitor,
   unhideVisitor,
   setLabel,
   clearVisitor,
   clearAllVisitors,
 } from "@/lib/visitors";
-import { banIp, unbanIp, setBanMessage } from "@/lib/bans";
+import { getBans, banIp, unbanIp, setBanMessage } from "@/lib/bans";
+import { listAllReviews } from "@/lib/reviews-store";
+
+// Read endpoint for the native app: the visitor log + hidden ids + bans + a
+// slug->{title,status} map so the activity list can name videos.
+export async function GET() {
+  const [visitors, hidden, bans, reviews] = await Promise.all([
+    listVisitors(),
+    getHiddenVisitors(),
+    getBans(),
+    listAllReviews(),
+  ]);
+  const videos: Record<string, { title: string; status: string }> = {};
+  for (const r of reviews) videos[r.slug] = { title: r.title, status: r.status };
+  return NextResponse.json({ visitors, hidden, bannedIps: bans.ips, banMessage: bans.message, videos });
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as

@@ -11,6 +11,37 @@ function expiryFromDuration(duration: unknown): string | null {
   return null; // "none" / anything else = stays until manually removed
 }
 
+// Read endpoint for the native app. Never returns passcode VALUES — only whether
+// each is set. (This route is gated behind the security passcode by the proxy.)
+export async function GET() {
+  const supabase = createAdminClient();
+  const { data } = await supabase
+    .from("admin_settings")
+    .select(
+      "email_notifications, notify_email, locked_passcode, locked_passcode_2, settings_passcode, banner_message, banner_expires_at, site_lock_mode, site_lock_passcode, site_lock_passcode_2, site_lock_hint, require_approval"
+    )
+    .eq("id", 1)
+    .single();
+
+  const mode = data?.site_lock_mode;
+  const siteLockMode = mode === "full" || mode === "code" ? mode : "off";
+
+  return NextResponse.json({
+    emailNotifications: data?.email_notifications ?? false,
+    notifyEmail: data?.notify_email ?? "",
+    bannerMessage: data?.banner_message ?? "",
+    bannerExpiresAt: data?.banner_expires_at ?? null,
+    siteLockMode,
+    siteLockPasscode: data?.site_lock_passcode ?? "",
+    siteLockPasscode2: data?.site_lock_passcode_2 ?? "",
+    siteLockHint: data?.site_lock_hint ?? "",
+    requireApproval: data?.require_approval ?? false,
+    lockedSet: !!(data?.locked_passcode || process.env.LOCKED_PASSCODE),
+    vaultSet: !!(data?.locked_passcode_2 || process.env.VAULT_PASSCODE),
+    settingsSet: !!(data?.settings_passcode || process.env.SETTINGS_PASSCODE),
+  });
+}
+
 export async function PUT(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const emailNotifications = typeof body?.emailNotifications === "boolean" ? body.emailNotifications : false;

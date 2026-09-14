@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getAppeal, setAppealStatus, deleteAppeal, createUnbanPin } from "@/lib/appeals";
+import { listAppeals, getAppeal, setAppealStatus, deleteAppeal, createUnbanPin } from "@/lib/appeals";
 import { unbanIp } from "@/lib/bans";
 import { deleteFile } from "@/lib/r2";
+import { getPublicFileUrl } from "@/lib/media-url";
+
+// Read endpoint for the native app: all appeals with resolved selfie URLs.
+export async function GET() {
+  const appeals = await listAppeals();
+  const rows = appeals.map((a) => ({ ...a, selfieUrl: getPublicFileUrl(a.selfieKey) }));
+  return NextResponse.json({ appeals: rows });
+}
 
 export async function POST(req: NextRequest) {
   const body = (await req.json().catch(() => null)) as
