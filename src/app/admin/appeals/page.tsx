@@ -1,13 +1,12 @@
+import { listAppeals } from "@/lib/appeals";
+import { getPublicFileUrl } from "@/lib/media-url";
 import AppealsList from "@/components/admin/AppealsList";
 
 export const dynamic = "force-dynamic";
 
-// FRONT-END ONLY for now. The real appeals live in the main site's Netlify Blobs
-// (with selfie photos in R2) — see BACKEND_TODO.md. Until that's wired up, this
-// renders the real Appeals UI with an empty list (the "No appeals yet" state).
-// To connect later: fetch listAppeals() + map selfie URLs and pass them in.
 export default async function AdminAppealsPage() {
-  const rows: [] = [];
+  const appeals = await listAppeals();
+  const rows = appeals.map((a) => ({ ...a, selfieUrl: getPublicFileUrl(a.selfieKey) }));
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10">

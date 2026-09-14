@@ -1,5 +1,7 @@
 import Link from "next/link";
-import type { BucketFile } from "@/lib/r2";
+import { listFiles } from "@/lib/r2";
+import { listAllReviews } from "@/lib/reviews-store";
+import { createAdminClient } from "@/lib/supabase/admin";
 import AdminStorageList from "@/components/admin/AdminStorageList";
 
 export const dynamic = "force-dynamic";
@@ -11,16 +13,42 @@ function formatBytes(bytes: number): string {
   return `${(mb / 1024).toFixed(2)} GB`;
 }
 
-// FRONT-END ONLY for now. The live version scans the R2 bucket and subtracts
-// in-use keys from reviews (Netlify Blobs), avatars (Supabase) and comment
-// images (Supabase) to find orphaned files. R2 and reviews aren't connected
-// yet — see BACKEND_TODO.md — and orphan detection MUST NOT run until reviews
-// are connected, or it would flag real in-use files for deletion. Until then
-// this renders the shell + empty state.
 export default async function AdminStoragePage() {
-  const allFiles: BucketFile[] = [];
-  const orphaned: BucketFile[] = [];
-  const orphanedBytes = 0;
+  const supabase = createAdminClient();
+
+  const [videos, thumbnails, avatars, commentImages, reviews, profilesRes, commentsRes] =
+    await Promise.all([
+      listFiles("videos/"),
+      listFiles("thumbnails/"),
+      listFiles("avatars/"),
+      listFiles("comment-images/"),
+      listAllReviews(),
+      supabase.from("profiles").select("avatar_key").not("avatar_key", "is", null),
+      supabase.from("comments").select("image_key").not("image_key", "is", null),
+    ]);
+
+  const inUseKeys = new Set<string>();
+  for (const review of reviews) {
+    if (review.videoKey) inUseKeys.add(review.videoKey);
+    if (review.thumbnailKey) inUseKeys.add(review.thumbnailKey);
+    if (review.secondReviewerVideoKey) inUseKeys.add(review.secondReviewerVideoKey);
+    if (review.secondReviewerThumbnailKey) inUseKeys.add(review.secondReviewerThumbnailKey);
+    if (review.thirdReviewerVideoKey) inUseKeys.add(review.thirdReviewerVideoKey);
+    if (review.thirdReviewerThumbnailKey) inUseKeys.add(review.thirdReviewerThumbnailKey);
+  }
+  for (const row of profilesRes.data ?? []) {
+    if (row.avatar_key) inUseKeys.add(row.avatar_key);
+  }
+  for (const row of commentsRes.data ?? []) {
+    if (row.image_key) inUseKeys.add(row.image_key);
+  }
+
+  const allFiles = [...videos, ...thumbnails, ...avatars, ...commentImages];
+  const orphaned = allFiles
+    .filter((f) => !inUseKeys.has(f.key))
+    .sort((a, b) => b.lastModified.localeCompare(a.lastModified));
+
+  const orphanedBytes = orphaned.reduce((sum, f) => sum + f.size, 0);
 
   return (
     <div className="mx-auto w-full max-w-3xl px-5 py-10">
