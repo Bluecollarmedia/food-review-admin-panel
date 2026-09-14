@@ -7,6 +7,10 @@ hooked up, so nothing is forgotten.
 ## ✅ Fully connected (shares live data with the main site)
 - **Settings** — reads/writes Supabase `admin_settings`. Done, works against the
   same live data as the main site.
+- **Accounts** — reads Supabase auth users + `profiles`; Suspend/Approve (PATCH
+  `approval_status`) and Delete (auth admin deleteUser) both work live. Avatar /
+  selfie images come from `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` (set it to the same
+  value as the main site so photos show; otherwise it falls back to initials).
 
 ## ⏳ Front-end built, backend NOT connected yet
 
