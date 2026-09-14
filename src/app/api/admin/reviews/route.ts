@@ -15,6 +15,9 @@ export async function GET() {
     thumbnailUrl: getPublicFileUrl(r.thumbnailKey),
     videoUrl: getPublicFileUrl(r.videoKey),
     secondReviewerVideoUrl: getPublicFileUrl(r.secondReviewerVideoKey),
+    secondReviewerThumbnailUrl: getPublicFileUrl(r.secondReviewerThumbnailKey),
+    thirdReviewerVideoUrl: getPublicFileUrl(r.thirdReviewerVideoKey),
+    thirdReviewerThumbnailUrl: getPublicFileUrl(r.thirdReviewerThumbnailKey),
   }));
   return NextResponse.json({ reviews: items });
 }
