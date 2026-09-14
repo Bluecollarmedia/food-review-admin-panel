@@ -11,6 +11,12 @@ hooked up, so nothing is forgotten.
   `approval_status`) and Delete (auth admin deleteUser) both work live. Avatar /
   selfie images come from `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` (set it to the same
   value as the main site so photos show; otherwise it falls back to initials).
+- **Comments** — loads live from the Supabase `comments` table (paginated) and
+  Delete (soft-delete via `/api/admin/comments/[slug]/[commentId]`) works live.
+  One partial: the **video title** shown under each comment comes from
+  `reviews-store` (Netlify Blobs, not connected yet), so for now each comment
+  shows the video **slug** instead of the nice title. Wire it up when the
+  reviews/blobs connection is added (pass a real slug->title map into the page).
 
 ## ⏳ Front-end built, backend NOT connected yet
 
