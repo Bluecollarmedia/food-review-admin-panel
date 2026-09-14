@@ -1,0 +1,111 @@
+@import "tailwindcss";
+
+:root {
+  --background: #fbf6ef;
+  --foreground: #221d19;
+  --surface: #ffffff;
+  --surface-muted: #f2e9dc;
+  --primary: #c8102e;
+  --primary-dark: #8c0b20;
+  --accent: #b8712b;
+  --accent-light: #d99a4e;
+  --border: #e7dcc9;
+}
+
+:root[data-theme="dark"] {
+  --background: #17130f;
+  --foreground: #f3ece0;
+  --surface: #221c17;
+  --surface-muted: #2b2420;
+  --primary: #ef4459;
+  --primary-dark: #c8102e;
+  --accent: #d99a4e;
+  --accent-light: #e8b56f;
+  --border: #3a322b;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
+  --color-primary: var(--primary);
+  --color-primary-dark: var(--primary-dark);
+  --color-accent: var(--accent);
+  --color-accent-light: var(--accent-light);
+  --color-border: var(--border);
+  --font-sans: var(--font-geist-sans);
+  --font-mono: var(--font-geist-mono);
+  --font-display: var(--font-bebas);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+}
+
+/* Never allow the page to scroll/swipe sideways. `clip` (not `hidden`) stops
+   horizontal overflow without creating a scroll container, so the sticky
+   header keeps working. */
+html,
+body {
+  overflow-x: clip;
+  max-width: 100%;
+}
+
+/* ---- Native-app feel (installed PWA / APK wrapper) ---- */
+/* Kill the "webpage" tells: the grey tap flash, the long-press callout menu,
+   the rubber-band overscroll, and the double-tap-to-zoom delay. */
+html {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: none;
+}
+body {
+  overscroll-behavior-y: none;
+  touch-action: manipulation;
+  -webkit-touch-callout: none;
+}
+button,
+a,
+[role="button"] {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+/* Snappy pressed feedback on tappable things. */
+button:active,
+a:active,
+[role="button"]:active {
+  opacity: 0.88;
+}
+/* Text you'd actually want to copy stays selectable; everything else doesn't
+   long-press-select like a webpage. */
+body {
+  -webkit-user-select: none;
+  user-select: none;
+}
+p,
+h1,
+h2,
+h3,
+input,
+textarea,
+[contenteditable] {
+  -webkit-user-select: text;
+  user-select: text;
+}
+/* Safe-area padding helper for the bottom tab bar (notch/gesture bar). */
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom, 0px);
+}
+.h-safe-bottom {
+  height: env(safe-area-inset-bottom, 0px);
+}
+
+/* Hide the scrollbar (keep scrolling). */
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
