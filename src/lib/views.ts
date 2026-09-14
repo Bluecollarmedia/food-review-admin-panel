@@ -1,12 +1,25 @@
-// DEFERRED BACKEND. Real view counts live in Netlify Blobs (getStore("views"))
-// on the main site — per-site, not connected here yet (see BACKEND_TODO.md).
-// These stubs return empty so the admin UI renders; real counts arrive when the
-// shared Netlify Blobs connection is wired.
+import { sharedStore } from "./blob-store";
 
-export async function getViews(_slug: string): Promise<number> {
-  return 0;
+function viewsStore() {
+  return sharedStore("views");
 }
 
-export async function getAllViews(_slugs: string[]): Promise<Record<string, number>> {
-  return {};
+export async function getViews(slug: string): Promise<number> {
+  const stored = (await viewsStore().get(slug, { type: "json" })) as number | null;
+  return stored ?? 0;
+}
+
+export async function incrementViews(slug: string): Promise<number> {
+  const current = await getViews(slug);
+  const updated = current + 1;
+  await viewsStore().setJSON(slug, updated);
+  return updated;
+}
+
+export async function getAllViews(slugs: string[]): Promise<Record<string, number>> {
+  const store = viewsStore();
+  const entries = await Promise.all(
+    slugs.map(async (slug) => [slug, (await store.get(slug, { type: "json" })) ?? 0] as const)
+  );
+  return Object.fromEntries(entries);
 }

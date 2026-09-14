@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { listAllReviews } from "@/lib/reviews-store";
 import { relativeTime } from "@/lib/time";
 
 export const dynamic = "force-dynamic";
@@ -7,16 +8,17 @@ export const dynamic = "force-dynamic";
 export default async function AdminNotificationsPage() {
   const supabase = createAdminClient();
 
-  const { data: notifications } = await supabase
-    .from("admin_notifications")
-    .select("id, type, slug, comment_id, message, read, created_at")
-    .order("created_at", { ascending: false })
-    .limit(100);
+  const [{ data: notifications }, reviews] = await Promise.all([
+    supabase
+      .from("admin_notifications")
+      .select("id, type, slug, comment_id, message, read, created_at")
+      .order("created_at", { ascending: false })
+      .limit(100),
+    listAllReviews(),
+  ]);
 
-  // The slug -> title map comes from reviews-store (Netlify Blobs, not connected
-  // yet — see BACKEND_TODO.md), so for now each notification labels its video by
-  // slug. The notifications themselves come live from Supabase.
-  const reviewTitles: Record<string, string> = {};
+  // slug -> title for the video label (from reviews-store / shared blobs).
+  const reviewTitles = Object.fromEntries(reviews.map((r) => [r.slug, r.title]));
 
   const unreadIds = (notifications ?? []).filter((n) => !n.read).map((n) => n.id);
   if (unreadIds.length > 0) {

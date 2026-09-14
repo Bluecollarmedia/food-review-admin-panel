@@ -1,14 +1,15 @@
 import Link from "next/link";
+import { listAllReviews } from "@/lib/reviews-store";
 import AdminAllComments from "@/components/admin/AdminAllComments";
 
 export const dynamic = "force-dynamic";
 
 export default async function AdminAllCommentsPage() {
-  // The comments themselves come live from Supabase (shared). The slug -> title
-  // map used to label each comment with its video comes from reviews-store,
-  // which lives in the main site's Netlify Blobs — not connected yet (see
-  // BACKEND_TODO.md). Until then, each comment falls back to showing the slug.
-  const reviewTitles: Record<string, string> = {};
+  // Comments come live from Supabase; the slug -> title map for the video label
+  // comes from reviews-store (shared Netlify Blobs). If the blob connection
+  // isn't configured, this is empty and each comment falls back to its slug.
+  const reviews = await listAllReviews();
+  const reviewTitles = Object.fromEntries(reviews.map((r) => [r.slug, r.title]));
 
   return (
     <div className="mx-auto w-full max-w-2xl px-5 py-10">
