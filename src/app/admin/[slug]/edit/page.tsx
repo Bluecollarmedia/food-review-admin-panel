@@ -3,13 +3,10 @@ import { notFound } from "next/navigation";
 import { getReview, listAllReviews } from "@/lib/reviews-store";
 import { isSettingsUnlocked } from "@/lib/settings-guard";
 import ReviewForm from "@/components/admin/ReviewForm";
+import AdminCommentsPanel from "@/components/admin/AdminCommentsPanel";
 
 export const dynamic = "force-dynamic";
 
-// NOTE: reviews come from Netlify Blobs (deferred) — getReview returns null for
-// now, so this page 404s until that connection is wired (see BACKEND_TODO.md).
-// The per-review comments panel (AdminCommentsPanel) will be added back when the
-// reviews backend is connected; the form itself is fully ported.
 export default async function EditReviewPage({
   params,
 }: {
@@ -34,6 +31,7 @@ export default async function EditReviewPage({
       <div className="mt-6">
         <ReviewForm mode="edit" initial={review} unlocked={unlocked} allReviews={allReviews} />
       </div>
+      <AdminCommentsPanel slug={review.slug} />
     </div>
   );
 }
