@@ -74,10 +74,9 @@ export async function proxy(req: NextRequest) {
   if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
     // The web UI authenticates with an httpOnly cookie; the native app can't use
     // cookies, so it sends the same token as an x-admin-token header instead.
-    const token =
-      req.cookies.get(ADMIN_SESSION_COOKIE)?.value ??
-      req.headers.get("x-admin-token") ??
-      undefined;
+    const cookieToken = req.cookies.get(ADMIN_SESSION_COOKIE)?.value;
+    const appToken = req.headers.get("x-admin-token") ?? undefined;
+    const token = cookieToken ?? appToken;
     const valid = await verifySessionToken(token, process.env.ADMIN_PASSWORD ?? "");
     if (!valid) {
       if (pathname.startsWith("/api/")) {
@@ -90,7 +89,10 @@ export async function proxy(req: NextRequest) {
 
     // Logged in with the shared admin code. Everything beyond reviews/upload
     // needs the separate security passcode on top.
-    if (!isBasicAdminPath(pathname)) {
+    // The native app gets full access with just the admin login (the owner's
+    // choice), so the security passcode only gates the web panel.
+    const isNativeApp = !cookieToken && !!appToken;
+    if (!isNativeApp && !isBasicAdminPath(pathname)) {
       const securityPass = await getSecurityPasscode();
       if (securityPass) {
         const settingsToken =
