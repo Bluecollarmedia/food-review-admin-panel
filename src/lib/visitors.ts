@@ -162,6 +162,11 @@ export async function recordVisit(id: string, ip: string, path: string): Promise
   await s.setJSON(key, record);
 }
 
+// One device's record (the native app loads hits per device on demand).
+export async function getVisitor(id: string): Promise<VisitorRecord | null> {
+  return ((await store().get(keyFor(id), { type: "json" })) as VisitorRecord | null) ?? null;
+}
+
 export async function listVisitors(): Promise<VisitorRecord[]> {
   const s = store();
   const { blobs } = await s.list();
