@@ -3,7 +3,7 @@ import { deleteFile } from "@/lib/r2";
 import { listAllReviews } from "@/lib/reviews-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-const ALLOWED_PREFIXES = ["videos/", "thumbnails/", "avatars/", "comment-images/"];
+const ALLOWED_PREFIXES = ["videos/", "thumbnails/", "avatars/", "comment-images/", "comment-videos/"];
 
 export async function DELETE(req: NextRequest) {
   const body = await req.json().catch(() => null);
@@ -20,7 +20,7 @@ export async function DELETE(req: NextRequest) {
   const [reviews, profileMatch, commentMatch] = await Promise.all([
     listAllReviews(),
     supabase.from("profiles").select("id").eq("avatar_key", key).limit(1),
-    supabase.from("comments").select("id").eq("image_key", key).limit(1),
+    supabase.from("comments").select("id").or(`image_key.eq.${key},video_key.eq.${key}`).limit(1),
   ]);
 
   const inUse =

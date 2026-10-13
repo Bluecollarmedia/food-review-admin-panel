@@ -30,7 +30,8 @@ async function googleSuggest(query: string, key: string, sessionToken?: string) 
     headers: { "Content-Type": "application/json", "X-Goog-Api-Key": key },
     body: JSON.stringify({
       input: query,
-      includedRegionCodes: ["us"],
+      // Soft bias toward NJ only — no includedRegionCodes, so searches for
+      // places anywhere in the world (not just the US) still work.
       locationBias: {
         circle: { center: { latitude: NJ.lat, longitude: NJ.lng }, radius: 50000 },
       },

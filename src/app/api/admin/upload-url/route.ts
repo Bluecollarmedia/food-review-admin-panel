@@ -1,11 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getUploadUrl } from "@/lib/r2";
+import { smallThumbnailKey } from "@/lib/media-url";
 
 export async function POST(req: NextRequest) {
   const body = await req.json().catch(() => null);
   const filename = typeof body?.filename === "string" ? body.filename : "";
   const contentType = typeof body?.contentType === "string" ? body.contentType : "";
   const folder = body?.folder === "thumbnails" ? "thumbnails" : "videos";
+
+  // The small copy of an existing thumbnail goes at a key derived from it.
+  if (body?.folder === "thumbnails-small") {
+    const sourceKey = typeof body?.sourceKey === "string" ? body.sourceKey : "";
+    if (!/^thumbnails\/[a-zA-Z0-9.\-_]+$/.test(sourceKey)) {
+      return NextResponse.json({ error: "Invalid sourceKey." }, { status: 400 });
+    }
+    const key = smallThumbnailKey(sourceKey);
+    const uploadUrl = await getUploadUrl(key, "image/webp", "public, max-age=31536000, immutable");
+    return NextResponse.json({ uploadUrl, key });
+  }
 
   if (!filename || !contentType) {
     return NextResponse.json(

@@ -15,6 +15,7 @@ type Row = {
   message: string;
   parent_id: string | null;
   image_key: string | null;
+  video_key: string | null;
   created_at: string;
   deleted_at: string | null;
   profiles: { display_name: string; avatar_key: string | null } | null;
@@ -31,7 +32,7 @@ export default function AdminAllComments({ reviewTitles }: { reviewTitles: Recor
     const { data } = await supabase
       .from("comments")
       .select(
-        "id, slug, user_id, guest_name, message, parent_id, image_key, created_at, deleted_at, profiles(display_name, avatar_key)"
+        "id, slug, user_id, guest_name, message, parent_id, image_key, video_key, created_at, deleted_at, profiles(display_name, avatar_key)"
       )
       .order("created_at", { ascending: false })
       .range(offset, offset + PAGE_SIZE - 1);
@@ -62,6 +63,13 @@ export default function AdminAllComments({ reviewTitles }: { reviewTitles: Recor
     setBusyId(null);
   }
 
+  async function handleRestore(row: Row) {
+    setBusyId(row.id);
+    await fetch(`/api/admin/comments/${row.slug}/${row.id}`, { method: "PUT" });
+    setRows((prev) => prev.map((r) => (r.id === row.id ? { ...r, deleted_at: null } : r)));
+    setBusyId(null);
+  }
+
   if (loading) {
     return <p className="mt-8 text-sm text-foreground/60">Loading comments...</p>;
   }
@@ -78,6 +86,7 @@ export default function AdminAllComments({ reviewTitles }: { reviewTitles: Recor
           : row.guest_name ?? "Guest";
         const avatarUrl = getPublicFileUrl(row.profiles?.avatar_key);
         const imageUrl = getPublicFileUrl(row.image_key);
+        const videoUrl = getPublicFileUrl(row.video_key);
         const videoTitle = reviewTitles[row.slug] ?? row.slug;
 
         const deleted = !!row.deleted_at;
@@ -116,6 +125,9 @@ export default function AdminAllComments({ reviewTitles }: { reviewTitles: Recor
                 // eslint-disable-next-line @next/next/no-img-element
                 <img src={imageUrl} alt="Attached photo" loading="lazy" className="mt-1.5 h-16 w-16 rounded-lg object-cover" />
               )}
+              {videoUrl && (
+                <video src={videoUrl} controls preload="metadata" className="mt-1.5 h-24 w-40 rounded-lg bg-black object-cover" />
+              )}
 
               <div className="mt-1.5 flex flex-wrap items-center gap-3">
                 <span className="text-xs font-semibold text-foreground/50">{videoTitle}</span>
@@ -126,6 +138,15 @@ export default function AdminAllComments({ reviewTitles }: { reviewTitles: Recor
                     className="text-xs font-semibold text-primary hover:underline disabled:opacity-50"
                   >
                     Delete
+                  </button>
+                )}
+                {deleted && (
+                  <button
+                    onClick={() => handleRestore(row)}
+                    disabled={busyId === row.id}
+                    className="text-xs font-semibold text-accent hover:underline disabled:opacity-50"
+                  >
+                    Restore
                   </button>
                 )}
               </div>

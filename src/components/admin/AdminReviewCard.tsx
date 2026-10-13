@@ -121,6 +121,20 @@ export default function AdminReviewCard({
     router.refresh();
   }
 
+  async function toggleRankingExclusion() {
+    setBusy(true);
+    const res = await fetch(`/api/admin/reviews/${review.slug}/toggle-ranking`, {
+      method: "PATCH",
+    });
+    setBusy(false);
+    if (!res.ok) {
+      const data = await res.json().catch(() => null);
+      alert(data?.error ?? "Couldn't update ranking exclusion.");
+      return;
+    }
+    router.refresh();
+  }
+
   return (
     <div className="overflow-hidden rounded-2xl border border-border bg-surface shadow-sm">
       <div className="flex gap-3 p-4">
@@ -174,6 +188,11 @@ export default function AdminReviewCard({
             >
               {review.videoKey ? "Video uploaded" : "No video"}
             </span>
+            {review.excludeFromRankings && (
+              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-[11px] font-semibold text-red-700">
+                Excluded from rankings
+              </span>
+            )}
           </div>
         </div>
       </div>
@@ -302,35 +321,48 @@ export default function AdminReviewCard({
       </div>
 
       {canManage ? (
-        <div className="grid grid-cols-3 gap-2 border-t border-border p-3">
-          <Link
-            href={`/admin/${review.slug}/edit`}
-            className="rounded-full border border-border py-2 text-center text-xs font-semibold text-foreground/70 hover:border-primary hover:text-primary"
-          >
-            Edit
-          </Link>
-          {isProtected ? (
+        <div className="flex flex-col gap-2 border-t border-border p-3">
+          <div className="grid grid-cols-3 gap-2">
             <Link
               href={`/admin/${review.slug}/edit`}
-              className="rounded-full border border-border py-2 text-center text-xs font-semibold text-foreground/70 hover:border-accent hover:text-accent"
+              className="rounded-full border border-border py-2 text-center text-xs font-semibold text-foreground/70 hover:border-primary hover:text-primary"
             >
-              Change
+              Edit
             </Link>
-          ) : (
+            {isProtected ? (
+              <Link
+                href={`/admin/${review.slug}/edit`}
+                className="rounded-full border border-border py-2 text-center text-xs font-semibold text-foreground/70 hover:border-accent hover:text-accent"
+              >
+                Change
+              </Link>
+            ) : (
+              <button
+                onClick={togglePublish}
+                disabled={busy}
+                className="rounded-full border border-border py-2 text-xs font-semibold text-foreground/70 hover:border-accent hover:text-accent disabled:opacity-50"
+              >
+                {review.status === "published" ? "Make Private" : "Publish"}
+              </button>
+            )}
             <button
-              onClick={togglePublish}
+              onClick={handleDelete}
               disabled={busy}
-              className="rounded-full border border-border py-2 text-xs font-semibold text-foreground/70 hover:border-accent hover:text-accent disabled:opacity-50"
+              className="rounded-full border border-primary py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-white disabled:opacity-50"
             >
-              {review.status === "published" ? "Make Private" : "Publish"}
+              Delete
             </button>
-          )}
+          </div>
           <button
-            onClick={handleDelete}
+            onClick={toggleRankingExclusion}
             disabled={busy}
-            className="rounded-full border border-primary py-2 text-xs font-semibold text-primary hover:bg-primary hover:text-white disabled:opacity-50"
+            className={`rounded-full py-2 text-xs font-semibold transition-colors ${
+              review.excludeFromRankings
+                ? "border border-red-300 bg-red-50 text-red-700 hover:bg-red-100"
+                : "border border-border text-foreground/70 hover:border-foreground/40"
+            }`}
           >
-            Delete
+            {review.excludeFromRankings ? "✓ Excluded from rankings" : "Include in rankings"}
           </button>
         </div>
       ) : (

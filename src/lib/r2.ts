@@ -1,10 +1,7 @@
 import { S3Client, PutObjectCommand, DeleteObjectCommand, ListObjectsV2Command } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
+import { smallThumbnailKey } from "@/lib/media-url";
 
-// R2 (S3-compatible) object storage — same bucket as the main site. Set these
-// env vars in the admin app's deploy to the same values the main site uses:
-//   R2_ENDPOINT, R2_ACCESS_KEY_ID, R2_SECRET_ACCESS_KEY, R2_BUCKET_NAME
-//   NEXT_PUBLIC_R2_PUBLIC_BASE_URL (public read URL, used by getPublicFileUrl)
 function client() {
   return new S3Client({
     region: "auto",
@@ -30,6 +27,12 @@ export async function getUploadUrl(key: string, contentType: string, cacheContro
 
 export async function deleteFile(key: string) {
   await client().send(new DeleteObjectCommand({ Bucket: BUCKET, Key: key }));
+  // Thumbnails have a small copy alongside them (see smallThumbnailKey).
+  if (key.startsWith("thumbnails/")) {
+    await client()
+      .send(new DeleteObjectCommand({ Bucket: BUCKET, Key: smallThumbnailKey(key) }))
+      .catch(() => {});
+  }
 }
 
 /** Server-side upload of a buffer (used for appeal selfies). */

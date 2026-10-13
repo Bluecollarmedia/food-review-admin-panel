@@ -12,6 +12,8 @@ export type AdminUserRow = {
   selfieUrl: string | null;
   isAdmin: boolean;
   approvalStatus: string;
+  commentsRestricted: boolean;
+  canUpload: boolean;
   createdAt: string;
 };
 
@@ -35,6 +37,28 @@ export default function AdminUsersList({ users }: { users: AdminUserRow[] }) {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ approval_status: status }),
+    }).catch(() => {});
+    setBusyId(null);
+    router.refresh();
+  }
+
+  async function setCommentsRestricted(id: string, restricted: boolean) {
+    setBusyId(id);
+    await fetch(`/api/admin/users/${id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ comments_visibility: restricted ? "own_only" : "all" }),
+    }).catch(() => {});
+    setBusyId(null);
+    router.refresh();
+  }
+
+  async function setCanUpload(id: string, canUpload: boolean) {
+    setBusyId(id);
+    await fetch(`/api/admin/users/${id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ can_upload: canUpload }),
     }).catch(() => {});
     setBusyId(null);
     router.refresh();
@@ -65,17 +89,22 @@ export default function AdminUsersList({ users }: { users: AdminUserRow[] }) {
               <div className="flex flex-wrap items-center gap-2">
                 <span className="text-sm font-semibold text-foreground">{u.displayName}</span>
                 {u.isAdmin && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
+                  <span className="rounded-full bg-primary/10 whitespace-nowrap px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-primary">
                     Admin
                   </span>
                 )}
                 {pending && (
-                  <span className="rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700">
+                  <span className="rounded-full bg-amber-100 whitespace-nowrap px-2 py-0.5 text-[10px] font-semibold text-amber-700">
                     Pending
                   </span>
                 )}
+                {u.commentsRestricted && (
+                  <span className="rounded-full bg-foreground/10 whitespace-nowrap px-2 py-0.5 text-[10px] font-semibold text-foreground/70">
+                    Own comments only
+                  </span>
+                )}
                 {denied && (
-                  <span className="rounded-full bg-primary/10 px-2 py-0.5 text-[10px] font-semibold text-primary">
+                  <span className="rounded-full bg-primary/10 whitespace-nowrap px-2 py-0.5 text-[10px] font-semibold text-primary">
                     Denied
                   </span>
                 )}
@@ -101,7 +130,7 @@ export default function AdminUsersList({ users }: { users: AdminUserRow[] }) {
               )}
             </div>
 
-            <div className="flex shrink-0 flex-wrap items-center gap-2">
+            <div className="flex w-full flex-wrap items-center gap-2 sm:w-auto sm:shrink-0">
               {u.approvalStatus !== "approved" && (
                 <button
                   onClick={() => setApproval(u.id, "approved")}
@@ -119,6 +148,32 @@ export default function AdminUsersList({ users }: { users: AdminUserRow[] }) {
                   title="Suspend this account — they'll be locked out"
                 >
                   Suspend
+                </button>
+              )}
+
+              {!u.isAdmin && (
+                <button
+                  onClick={() => setCommentsRestricted(u.id, !u.commentsRestricted)}
+                  disabled={busyId === u.id}
+                  className="rounded-full border border-border px-3 py-1 text-xs font-semibold text-foreground/70 hover:border-primary hover:text-primary disabled:opacity-50"
+                  title="When on, this account only sees its own comments (it can still comment)"
+                >
+                  {u.commentsRestricted ? "Show all comments" : "Restrict comments"}
+                </button>
+              )}
+
+              {!u.isAdmin && (
+                <button
+                  onClick={() => setCanUpload(u.id, !u.canUpload)}
+                  disabled={busyId === u.id}
+                  className={`rounded-full px-3 py-1 text-xs font-semibold disabled:opacity-50 ${
+                    u.canUpload
+                      ? "border border-emerald-600 bg-emerald-600/10 text-emerald-700 hover:bg-emerald-600/20"
+                      : "border border-border text-foreground/70 hover:border-primary hover:text-primary"
+                  }`}
+                  title="When on, this account can upload reviews from the upload-only page (not the full admin panel)"
+                >
+                  {u.canUpload ? "✓ Can upload" : "Allow uploads"}
                 </button>
               )}
 

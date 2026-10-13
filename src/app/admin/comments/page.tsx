@@ -5,9 +5,6 @@ import AdminAllComments from "@/components/admin/AdminAllComments";
 export const dynamic = "force-dynamic";
 
 export default async function AdminAllCommentsPage() {
-  // Comments come live from Supabase; the slug -> title map for the video label
-  // comes from reviews-store (shared Netlify Blobs). If the blob connection
-  // isn't configured, this is empty and each comment falls back to its slug.
   const reviews = await listAllReviews();
   const reviewTitles = Object.fromEntries(reviews.map((r) => [r.slug, r.title]));
 

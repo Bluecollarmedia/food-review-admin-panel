@@ -3,6 +3,8 @@ import { listFiles } from "@/lib/r2";
 import { listAllReviews } from "@/lib/reviews-store";
 import { createAdminClient } from "@/lib/supabase/admin";
 import AdminStorageList from "@/components/admin/AdminStorageList";
+import AdminSmallThumbnails from "@/components/admin/AdminSmallThumbnails";
+import { smallThumbnailKey } from "@/lib/media-url";
 
 export const dynamic = "force-dynamic";
 
@@ -16,15 +18,17 @@ function formatBytes(bytes: number): string {
 export default async function AdminStoragePage() {
   const supabase = createAdminClient();
 
-  const [videos, thumbnails, avatars, commentImages, reviews, profilesRes, commentsRes] =
+  const [videos, thumbnails, smallThumbnails, avatars, commentImages, commentVideos, reviews, profilesRes, commentsRes] =
     await Promise.all([
       listFiles("videos/"),
       listFiles("thumbnails/"),
+      listFiles("thumbnails-small/"),
       listFiles("avatars/"),
       listFiles("comment-images/"),
+      listFiles("comment-videos/"),
       listAllReviews(),
       supabase.from("profiles").select("avatar_key").not("avatar_key", "is", null),
-      supabase.from("comments").select("image_key").not("image_key", "is", null),
+      supabase.from("comments").select("image_key, video_key"),
     ]);
 
   const inUseKeys = new Set<string>();
@@ -41,9 +45,15 @@ export default async function AdminStoragePage() {
   }
   for (const row of commentsRes.data ?? []) {
     if (row.image_key) inUseKeys.add(row.image_key);
+    if (row.video_key) inUseKeys.add(row.video_key);
   }
 
-  const allFiles = [...videos, ...thumbnails, ...avatars, ...commentImages];
+  const smallKeys = new Set(smallThumbnails.map((f) => f.key));
+  const missingSmall = [...inUseKeys].filter(
+    (key) => key.startsWith("thumbnails/") && !smallKeys.has(smallThumbnailKey(key))
+  );
+
+  const allFiles = [...videos, ...thumbnails, ...avatars, ...commentImages, ...commentVideos];
   const orphaned = allFiles
     .filter((f) => !inUseKeys.has(f.key))
     .sort((a, b) => b.lastModified.localeCompare(a.lastModified));
@@ -62,9 +72,11 @@ export default async function AdminStoragePage() {
         </Link>
       </div>
       <p className="mt-1 text-foreground/60">
-        {allFiles.length} files in the bucket (videos, thumbnails, avatars, comment photos)
+        {allFiles.length} files in the bucket (videos, thumbnails, avatars, comment photos/videos)
         &middot; {orphaned.length} not linked to anything, using {formatBytes(orphanedBytes)}.
       </p>
+
+      <AdminSmallThumbnails missing={missingSmall} />
 
       {orphaned.length === 0 ? (
         <p className="mt-8 text-center text-foreground/60">

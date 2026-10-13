@@ -11,12 +11,14 @@ export async function notifyByEmail({
   origin,
   slug,
   parentId,
+  replyToId,
   message,
   authorId,
 }: {
   origin: string;
   slug: string;
   parentId: string | null;
+  replyToId?: string | null;
   message: string;
   authorId: string | null;
 }) {
@@ -28,13 +30,16 @@ export async function notifyByEmail({
   const review = await getReview(slug).catch(() => null);
   const videoTitle = review?.title;
 
-  // The parent comment (both its author and its text) when this is a reply.
+  // The comment being answered (both its author and its text) when this is a
+  // reply: the specific reply it answers if there is one, otherwise the thread's
+  // top comment.
   let parent: { user_id: string | null; message: string } | null = null;
-  if (parentId) {
+  const answeredId = replyToId ?? parentId;
+  if (answeredId) {
     const { data } = await supabase
       .from("comments")
       .select("user_id, message")
-      .eq("id", parentId)
+      .eq("id", answeredId)
       .single();
     parent = data ?? null;
   }
@@ -68,11 +73,13 @@ export async function notifyByEmail({
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("email_notifications")
+    .select("email_notifications, comments_visibility")
     .eq("id", parentUserId)
     .single();
 
   if (!profile?.email_notifications) return;
+  // Restricted accounts can't see other people's comments, so never email them one.
+  if (profile.comments_visibility === "own_only") return;
 
   const { data: userResult } = await supabase.auth.admin.getUserById(parentUserId);
   const email = userResult?.user?.email;

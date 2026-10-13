@@ -8,7 +8,7 @@ export async function GET() {
 
   const [{ data: authData }, { data: profiles }] = await Promise.all([
     supabase.auth.admin.listUsers({ perPage: 200 }),
-    supabase.from("profiles").select("id, display_name, avatar_key, selfie_key, is_admin, approval_status"),
+    supabase.from("profiles").select("id, display_name, avatar_key, selfie_key, is_admin, approval_status, comments_visibility, can_upload"),
   ]);
 
   const profileById = new Map((profiles ?? []).map((p) => [p.id, p]));
@@ -24,6 +24,8 @@ export async function GET() {
         selfieUrl: getPublicFileUrl(profile?.selfie_key),
         isAdmin: profile?.is_admin ?? false,
         approvalStatus: profile?.approval_status ?? "approved",
+        commentsRestricted: profile?.comments_visibility === "own_only",
+        canUpload: profile?.can_upload ?? false,
         createdAt: u.created_at,
       };
     })

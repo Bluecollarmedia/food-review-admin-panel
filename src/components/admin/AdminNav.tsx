@@ -31,6 +31,7 @@ export default function AdminNav({
       href: "/admin/notifications",
       label: `Notifications${unreadNotifications ? ` (${unreadNotifications})` : ""}`,
     },
+    { href: "/admin/push", label: "Push" },
     { href: "/admin/storage", label: "Storage" },
   ];
 
@@ -41,22 +42,17 @@ export default function AdminNav({
 
   return (
     <div className="border-b border-border bg-surface">
-      <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 px-5 py-3">
+      <div className="mx-auto flex max-w-3xl items-center justify-between px-5 py-3">
         <span className="font-display text-lg tracking-wide text-foreground">
           D&amp;S Admin
         </span>
-        {!unlocked && (
-          <Link
-            href="/admin/unlock"
-            className="flex shrink-0 items-center gap-1 whitespace-nowrap text-sm font-semibold text-foreground/50 hover:text-primary"
-          >
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
-              <rect x="5" y="11" width="14" height="9" rx="2" />
-              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
-            </svg>
-            Unlock more
-          </Link>
-        )}
+        {/* This panel is its own site, so "main site" is the public website. */}
+        <a
+          href="https://dsfoodreviews.com"
+          className="text-sm font-semibold text-foreground/60 hover:text-primary"
+        >
+          &larr; Back to Main Site
+        </a>
       </div>
       <nav className="mx-auto flex max-w-3xl items-center gap-1 overflow-x-auto px-5">
         {links.map((link) => {
@@ -75,6 +71,18 @@ export default function AdminNav({
             </Link>
           );
         })}
+        {!unlocked && (
+          <Link
+            href="/admin/unlock"
+            className="ml-auto flex shrink-0 items-center gap-1 whitespace-nowrap py-3 text-sm font-semibold text-foreground/50 hover:text-primary"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} className="h-4 w-4">
+              <rect x="5" y="11" width="14" height="9" rx="2" />
+              <path d="M8 11V7a4 4 0 0 1 8 0v4" />
+            </svg>
+            Unlock more
+          </Link>
+        )}
       </nav>
     </div>
   );
