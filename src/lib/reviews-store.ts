@@ -128,6 +128,7 @@ export type ReviewInput = {
   lat?: number;
   lng?: number;
   mapAddress?: string;
+  excludeFromRankings?: boolean;
 };
 
 export async function createReview(input: ReviewInput): Promise<Review> {

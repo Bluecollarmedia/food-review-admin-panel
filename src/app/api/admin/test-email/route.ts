@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { sendEmail } from "@/lib/email";
 import { createAdminClient } from "@/lib/supabase/admin";
 
-// Admin-only (gated by the proxy). Sends a real test email and returns the
+// Admin-only (gated by the middleware). Sends a real test email and returns the
 // actual Resend result — including the error text — so email setup problems are
 // visible instead of failing silently.
 export async function POST(req: NextRequest) {

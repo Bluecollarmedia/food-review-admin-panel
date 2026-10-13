@@ -10,6 +10,7 @@ type Row = {
   parent_id: string | null;
   created_at: string;
   image_key: string | null;
+  video_key: string | null;
   profiles: { display_name: string; avatar_key: string | null } | null;
 };
 
@@ -20,6 +21,7 @@ type CommentNode = {
   authorName: string;
   avatarUrl: string | null;
   imageUrl: string | null;
+  videoUrl: string | null;
   isGuest: boolean;
   replies: CommentNode[];
 };
@@ -31,7 +33,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
   const supabase = createAdminClient();
   const { data } = await supabase
     .from("comments")
-    .select("id, user_id, guest_name, message, parent_id, created_at, image_key, profiles(display_name, avatar_key)")
+    .select("id, user_id, guest_name, message, parent_id, created_at, image_key, video_key, profiles(display_name, avatar_key)")
     .eq("slug", slug)
     .is("deleted_at", null)
     .order("created_at", { ascending: true });
@@ -46,6 +48,7 @@ export async function GET(_req: NextRequest, { params }: { params: Promise<{ slu
       authorName: r.user_id ? r.profiles?.display_name ?? "Deleted user" : r.guest_name ?? "Guest",
       avatarUrl: getPublicFileUrl(r.profiles?.avatar_key),
       imageUrl: getPublicFileUrl(r.image_key),
+      videoUrl: getPublicFileUrl(r.video_key),
       isGuest: r.user_id === null,
       replies: [],
     });

@@ -1,5 +1,5 @@
-import { cookies } from "next/headers";
-import { SETTINGS_SESSION_COOKIE, verifySessionToken } from "./session";
+import { cookies, headers } from "next/headers";
+import { ADMIN_SESSION_COOKIE, SETTINGS_SESSION_COOKIE, verifySessionToken } from "./session";
 import { getSettingsPasscode } from "./locked-passcode";
 
 /**
@@ -9,6 +9,7 @@ import { getSettingsPasscode } from "./locked-passcode";
  * security passcode is configured yet.
  */
 export async function isSettingsUnlocked(): Promise<boolean> {
+  if (await isNativeAppRequest()) return true;
   const passcode = await getSettingsPasscode();
   if (!passcode) return true;
   const token = (await cookies()).get(SETTINGS_SESSION_COOKIE)?.value;
@@ -17,4 +18,13 @@ export async function isSettingsUnlocked(): Promise<boolean> {
 
 export function isProtectedStatus(status: string | undefined): boolean {
   return status === "locked" || status === "vault";
+}
+
+/**
+ * The native app (admin token in a header, no browser cookie) gets full access
+ * with just the admin login. The proxy has already verified that token.
+ */
+export async function isNativeAppRequest(): Promise<boolean> {
+  const [cookieStore, headerStore] = await Promise.all([cookies(), headers()]);
+  return !cookieStore.get(ADMIN_SESSION_COOKIE)?.value && !!headerStore.get("x-admin-token");
 }

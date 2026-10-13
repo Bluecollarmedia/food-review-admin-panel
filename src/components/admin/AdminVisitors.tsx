@@ -204,6 +204,7 @@ function VisitorRow({
 
   const locations = visitor.locations ?? [];
   const primary = locations[0];
+  const topIp = primary?.ip;
 
   return (
     <div

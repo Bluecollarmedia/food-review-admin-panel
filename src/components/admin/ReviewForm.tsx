@@ -6,7 +6,7 @@ import { categories, cities, reviewers, prices, type Review } from "@/lib/data";
 import ImageCropper from "../ImageCropper";
 import LocationPicker from "./LocationPicker";
 import { compressVideo, type VideoQuality } from "@/lib/compress-video";
-import { uploadFile } from "@/lib/upload-file";
+import { uploadFile, uploadSmallThumbnail } from "@/lib/upload-file";
 
 // Minimal typing for the Screen Wake Lock API — not in the older DOM lib we
 // target. Used to keep the phone from sleeping mid compress/upload (the browser
@@ -29,6 +29,10 @@ type Props = {
   initial?: Review;
   unlocked?: boolean;
   allReviews?: { slug: string; title: string }[];
+  // Contributor mode: a flagged non-admin account uploading from the dedicated
+  // upload-only page. Uses the /api/contribute/* endpoints, always publishes,
+  // and hides the visibility (Published/Draft/Locked/Vault) control.
+  contributor?: boolean;
 };
 
 function UploadDropzone({
@@ -209,7 +213,8 @@ function MediaUploadFields({
   );
 }
 
-export default function ReviewForm({ mode, initial, unlocked = true, allReviews = [] }: Props) {
+export default function ReviewForm({ mode, initial, unlocked = true, allReviews = [], contributor = false }: Props) {
+  const uploadEndpoint = contributor ? "/api/contribute/upload-url" : "/api/admin/upload-url";
   const router = useRouter();
 
   // A Locked/Vault video's visibility is frozen unless the security passcode has
@@ -237,7 +242,7 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
     initial && !reviewers.includes(initial.reviewer) ? initial.reviewer : ""
   );
   const [status, setStatus] = useState<"published" | "draft" | "locked" | "vault">(
-    initial?.status ?? "draft"
+    initial?.status ?? (contributor ? "published" : "draft")
   );
   const [videoKey, setVideoKey] = useState<string | undefined>(initial?.videoKey);
   const [videoFile, setVideoFile] = useState<File | null>(null);
@@ -485,8 +490,11 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
           thumbnailBlob,
           "thumbnail.webp",
           "thumbnails",
-          setThumbnailProgress
+          setThumbnailProgress,
+          uploadEndpoint
         );
+        // Not fatal: the site falls back to the full image if the small copy is missing.
+        await uploadSmallThumbnail(thumbnailBlob, finalThumbnailKey, uploadEndpoint).catch(() => {});
         setThumbnailProgress(null);
       }
 
@@ -506,7 +514,7 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
         }
         setVideoPhase("uploading");
         setVideoProgress(0);
-        finalVideoKey = await uploadFile(uploadBlob, uploadName, "videos", setVideoProgress);
+        finalVideoKey = await uploadFile(uploadBlob, uploadName, "videos", setVideoProgress, uploadEndpoint);
         setVideoProgress(null);
       }
 
@@ -517,8 +525,11 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
           secondReviewerThumbnailBlob,
           "thumbnail.webp",
           "thumbnails",
-          setSecondReviewerThumbnailProgress
+          setSecondReviewerThumbnailProgress,
+          uploadEndpoint
         );
+        // Not fatal: the site falls back to the full image if the small copy is missing.
+        await uploadSmallThumbnail(secondReviewerThumbnailBlob, finalSecondReviewerThumbnailKey, uploadEndpoint).catch(() => {});
         setSecondReviewerThumbnailProgress(null);
       }
 
@@ -546,7 +557,8 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
           uploadBlob,
           uploadName,
           "videos",
-          setSecondReviewerVideoProgress
+          setSecondReviewerVideoProgress,
+          uploadEndpoint
         );
         setSecondReviewerVideoProgress(null);
       }
@@ -558,8 +570,11 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
           thirdReviewerThumbnailBlob,
           "thumbnail.webp",
           "thumbnails",
-          setThirdReviewerThumbnailProgress
+          setThirdReviewerThumbnailProgress,
+          uploadEndpoint
         );
+        // Not fatal: the site falls back to the full image if the small copy is missing.
+        await uploadSmallThumbnail(thirdReviewerThumbnailBlob, finalThirdReviewerThumbnailKey, uploadEndpoint).catch(() => {});
         setThirdReviewerThumbnailProgress(null);
       }
 
@@ -587,7 +602,8 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
           uploadBlob,
           uploadName,
           "videos",
-          setThirdReviewerVideoProgress
+          setThirdReviewerVideoProgress,
+          uploadEndpoint
         );
         setThirdReviewerVideoProgress(null);
       }
@@ -626,11 +642,12 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
         mapAddress: location.address,
       };
 
-      const url =
-        mode === "create"
+      const url = contributor
+        ? "/api/contribute/reviews"
+        : mode === "create"
           ? "/api/admin/reviews"
           : `/api/admin/reviews/${initial!.slug}`;
-      const method = mode === "create" ? "POST" : "PUT";
+      const method = contributor ? "POST" : mode === "create" ? "POST" : "PUT";
 
       const res = await fetch(url, {
         method,
@@ -643,7 +660,12 @@ export default function ReviewForm({ mode, initial, unlocked = true, allReviews 
         throw new Error(data?.error ?? "Something went wrong");
       }
 
-      router.push("/admin");
+      if (contributor) {
+        const data = await res.json().catch(() => null);
+        router.push(data?.review?.slug ? `/videos/${data.review.slug}` : "/account");
+      } else {
+        router.push("/admin");
+      }
       router.refresh();
     } catch (err) {
       setError(err instanceof Error ? err.message : "Something went wrong");

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createReview, listAllReviews, type ReviewInput } from "@/lib/reviews-store";
 import { getAllViews } from "@/lib/views";
+import { getAllViewSettings } from "@/lib/view-counts";
 import { notifyNewUpload } from "@/lib/notify";
 import { getPublicFileUrl } from "@/lib/media-url";
 
@@ -8,10 +9,12 @@ import { getPublicFileUrl } from "@/lib/media-url";
 // view counts and resolved file URLs.
 export async function GET() {
   const reviews = await listAllReviews();
-  const views = await getAllViews(reviews.map((r) => r.slug));
+  const slugs = reviews.map((r) => r.slug);
+  const [views, settings] = await Promise.all([getAllViews(slugs), getAllViewSettings(slugs)]);
   const items = reviews.map((r) => ({
     ...r,
     realViews: views[r.slug] ?? 0,
+    viewSetting: settings[r.slug] ?? null,
     thumbnailUrl: getPublicFileUrl(r.thumbnailKey),
     videoUrl: getPublicFileUrl(r.videoKey),
     secondReviewerVideoUrl: getPublicFileUrl(r.secondReviewerVideoKey),

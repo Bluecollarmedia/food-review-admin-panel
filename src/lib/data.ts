@@ -5,6 +5,7 @@ export type Comment = {
   authorName: string;
   avatarUrl: string | null;
   imageUrl: string | null;
+  videoUrl: string | null;
   isGuest: boolean;
   userId: string | null;
   replies: Comment[];
@@ -52,6 +53,8 @@ export type Review = {
   updatedAt: string;
   /** Public-facing padded view count, attached when the review is read. */
   displayViews?: number;
+  /** If true, exclude this review's rating from the rankings page. */
+  excludeFromRankings?: boolean;
 };
 
 export const categories = [

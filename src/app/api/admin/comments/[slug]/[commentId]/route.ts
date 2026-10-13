@@ -22,3 +22,22 @@ export async function DELETE(
 
   return NextResponse.json({ ok: true });
 }
+
+export async function PUT(
+  _req: NextRequest,
+  { params }: { params: Promise<{ commentId: string }> }
+) {
+  const { commentId } = await params;
+  const supabase = createAdminClient();
+
+  // Restore (undelete): clear deleted_at on the comment and its replies.
+  const { error } = await supabase
+    .from("comments")
+    .update({ deleted_at: null })
+    .or(`id.eq.${commentId},parent_id.eq.${commentId}`);
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 500 });
+  }
+
+  return NextResponse.json({ ok: true });
+}

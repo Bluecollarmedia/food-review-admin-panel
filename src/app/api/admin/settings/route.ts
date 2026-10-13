@@ -3,6 +3,7 @@ import { revalidateTag } from "next/cache";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { SITE_SETTINGS_TAG } from "@/lib/site-settings";
 import { SETTINGS_SESSION_COOKIE, verifySessionToken } from "@/lib/session";
+import { isNativeAppRequest } from "@/lib/settings-guard";
 
 function expiryFromDuration(duration: unknown): string | null {
   const now = Date.now();
@@ -91,6 +92,7 @@ export async function PUT(req: NextRequest) {
   const currentSettingsPasscode = existing?.settings_passcode || process.env.SETTINGS_PASSCODE || "";
   const settingsUnlocked =
     !currentSettingsPasscode ||
+    (await isNativeAppRequest()) ||
     (await verifySessionToken(req.cookies.get(SETTINGS_SESSION_COOKIE)?.value, currentSettingsPasscode));
 
   const messageChanged = (existing?.banner_message ?? "") !== bannerMessage;

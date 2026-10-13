@@ -17,7 +17,6 @@ export default async function AdminNotificationsPage() {
     listAllReviews(),
   ]);
 
-  // slug -> title for the video label (from reviews-store / shared blobs).
   const reviewTitles = Object.fromEntries(reviews.map((r) => [r.slug, r.title]));
 
   const unreadIds = (notifications ?? []).filter((n) => !n.read).map((n) => n.id);
